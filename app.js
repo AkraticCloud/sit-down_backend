@@ -1,3 +1,4 @@
+
 const express = require ('express')
 const cors = require ('cors')
 
@@ -9,7 +10,7 @@ app.use(express.json({limit: '10mb'})) //Arbitrary json size limit
 app.use(cors())
 
 // Allows access to the routes found in the routes folder
-const routes = require('./routes')
+const routes = require('./routes/index.cjs')
 app.use("/", routes)
 
 //Starts server and informs what port to request to
