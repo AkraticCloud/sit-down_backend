@@ -1,6 +1,6 @@
-
-const express = require ('express')
+const con = require('./db/client.cjs')
 const cors = require ('cors')
+const express = require ('express')
 
 require('dotenv').config()
 const PORT = process.env.SERVER_PORT || 8000
@@ -12,6 +12,11 @@ app.use(cors())
 // Allows access to the routes found in the routes folder
 const routes = require('./routes/index.cjs')
 app.use("/", routes)
+
+//Establish connection to client
+con.connect()
+   .then(() => console.log("Connection established with database"))
+   .catch(err => console.error('Connection Error: ', err.stack))
 
 //Starts server and informs what port to request to
 app.listen(PORT, () =>{console.log(`Server is listening at port ${PORT}`)})

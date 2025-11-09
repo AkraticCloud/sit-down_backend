@@ -5,12 +5,14 @@
  require('dotenv').config()
 
  // Pulls from environment variables for required information
- const con = Client({
-   host: process.env.DB_HOST,
-   user: process.env.DB_USER,
-   port: process.env.DB_PORT,
-   password: process.env.DB_PASS,
-   database: process.env.DB_NAME
- })
+ const url = process.env.DB_URL
+ if (url == null) {
+    console.error("Missing connection string, exiting...")
+    process.exit(1)
+ }
 
+ const con = new Client({
+  connectionString: url
+ })
+ 
  module.exports = con
