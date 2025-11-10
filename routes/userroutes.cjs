@@ -6,7 +6,7 @@ const router = express.Router()
 
 router.post('/create', async(req, res)=>{
    try{
-
+      
    } catch{res.status(500).send("Internal Error: Error occurred while creating account")}
 })
 
@@ -22,4 +22,9 @@ router.put('/update', async(req,res)=> {
    }catch{res.status(500).send("Internal Error: Error occurred while updating account information")}
 })
 
+router.delete('/user', async(req,res)=> {
+   try{
+
+   }catch{res.status(500).send("Internal Error: Error occurred while deleting account")}
+})
 module.exports = router
