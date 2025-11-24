@@ -2,7 +2,7 @@
 
 const express = require('express')
 
-const userRoutes = require('./userroutes.cjs')
+const userRoutes = require('./userroutes.js')
 const dbRoutes = require('./dbroutes.cjs')
 const placesRoutes = require('./placesroutes.cjs')
 
