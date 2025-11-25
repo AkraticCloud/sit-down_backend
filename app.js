@@ -1,13 +1,19 @@
+const bodyParser = require('body-parser')
+const cookieParser = require('cookie-parser')
 const con = require('./db/client.cjs')
-const cors = require ('cors')
-const express = require ('express')
+const cors = require('cors')
+const express = require('express')
+const supabase = require('./utility/supabase.js')
 
 require('dotenv').config()
+const app = express()
 const PORT = process.env.SERVER_PORT || 8000
 
-const app = express()
-app.use(express.json({limit: '10mb'})) //Arbitrary json size limit
+
+app.use(bodyParser.urlencoded({ extended: true }))
 app.use(cors())
+app.use(cookieParser())
+app.use(express.json({limit: '10mb'})) //Arbitrary json size limit
 
 // Allows access to the routes found in the routes folder
 const routes = require('./routes/index.cjs')
