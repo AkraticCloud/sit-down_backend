@@ -43,7 +43,7 @@ async function searchNearbyPlaces(lat, lon, rad){
    ].join(',')
 
    try{
-      const response = await placesClient.searchNearby(request, {
+      const [response] = await placesClient.searchNearby(request, {
          otherArgs: {
             headers: {
                'X-Goog-FieldMask': fieldMask
@@ -51,10 +51,10 @@ async function searchNearbyPlaces(lat, lon, rad){
          }
       })
       
-      const results = response.places.map( place =>({
+      const results = response.places.map(place =>({
          placeid: place.id,
          name: place.displayName?.text || "Unknown",
-         address: places.formattedAddress,
+         address: place.formattedAddress,
          primaryType: place.primaryType
       }))
 
