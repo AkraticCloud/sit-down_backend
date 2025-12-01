@@ -13,8 +13,8 @@ router.post('/createlist', async(req,res) =>{
                      VALUES ($1,$2,$3)`
 
       const user_id = con.query `select id
-                                 from public."userInfo"
-                                 where username = ${username}` 
+                                 from public.profiles
+                                 where username = '${username}'` 
       con.query(query,[foodlist_name,restaurant_id,user_id], (err,result) =>{
          if(err){ res.status(500).send(err) }
          else{
@@ -35,8 +35,8 @@ router.put('/addtolist', async(req,res) =>{
                      set restaurants = array_append(restaurants,'$1')
                      where foodlist_name = $2 AND createdby = $3`
       const user_id = con.query `select id
-                                 from public."userInfo"
-                                 where username = ${username}` 
+                                 from public.profiles
+                                 where username = '${username}'` 
 
       con.query(query,[restaurant_id,foodlist_name,user_id], (err,result) => {
          if(err){ res.status(500).send(err) }
@@ -57,8 +57,8 @@ router.get('/foodlists', async(req,res) =>{
                      FROM public."foodLists"
                      WHERE foodlist_name = $1 AND createdby = $2`
       const user_id = con.query `select id
-                                 from public."userInfo"
-                                 where username = ${username}` 
+                                 from public.profiles
+                                 where username = '${username}'` 
 
       con.query(query, [foodlist_name,user_id], (err,result) => {
          if(err){ res.status(500).send(err) }
@@ -79,8 +79,8 @@ router.delete('/removefromlist', async(req,res) =>{
                      set restaurants = array_remove(restaurants, '$1')
                      where foodlist_name = $2 and createdby = $3`
       const user_id = con.query `select id
-                                 from public."userInfo"
-                                 where username = ${username}` 
+                                 from public.profiles
+                                 where username = '${username}'` 
 
       con.query(query,[restaurant_id,foodlist_name,user_id], (err,result) => {
          if(err) { res.status(500).send(err) }
@@ -100,14 +100,14 @@ router.delete('/deletelist', async(req,res) =>{
       const query = `delete from public."foodLists"
                      where foodlist_name = $1 and createdby = $3`
       const user_id = con.query `select id
-                                 from public."userInfo"
-                                 where username = ${username}` 
+                                 from public.profiles
+                                 where username = '${username}'` 
                                  
       con.query(query,[foodlist_name,user_id], (err,result) => {
          if(err) { res.status(500).send(err) }
          else{
             console.log(result)
-            res.status(200).send("Request received, deleting ")
+            res.status(200).send("Request received, deleting")
          }
       })
    }catch{res.status(500).send("Internal Error: Error occurred while retrieving FoodList restuarants")}
