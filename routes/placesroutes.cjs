@@ -20,8 +20,8 @@ const placesClient = new PlacesClient({
 // This function invokes Nearby Search from Google Places(New) 
 async function searchNearbyPlaces(lat, lon, rad){
    const center = {
-      lat: lat,
-      long: lon
+      latitude: lat,
+      longitude: lon
    }
    
    const request = {
