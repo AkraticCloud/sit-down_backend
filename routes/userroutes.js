@@ -1,77 +1,78 @@
 //Router module for user actions
 
-import { createClient } from '@supabase/supabase-js'
-
 const bcrypt = require('bcrypt')
 const con = require('../db/client.cjs')
 const express = require('express')
 const router = express.Router()
+const { supabase } = require('../utility/supabase.js')
 
 /*
-   We expect that the client should send a JSON in the format:
+   We expect that the client requests should send a JSON that at least contains:
       {
-         "name": [Enter username here]
+         "email": [Enter email here]
       }
       Any additions are mentioned in their respective routes
 */
 
 
 /*
-   Create and login will require the pass variable in the form:
+   Create will require the password and username variable in the order:
       {
-         "pass": [Enter password here]
+         "password": [Enter password here],
+         "username": [Enter username here]
       }
 */
-
 router.post('/create', async(req, res) =>{
    try{
+      const { email, password, username } = req.body
+      console.log(`${email}\t${password}\t${username}`)
+      const { data, error } = await supabase.auth.signUp({ email, password })
+      if(error){
+         console.log(`Supabase Error: ${error.message}`)
+         res.status(500).send(`Internal Error occured while creating account: ${error.message}`)
+      }
 
-      // We'll hash the password so that unauthorized db access does not guarantee data theft of accounts
-      const salt = await bcrypt.genSalt()
-      const hash = await bcrypt.hash(req.body.pass, salt)
+      const query = `UPDATE public.profiles
+                     SET username = '$1'
+                     WHERE email = '$2'`
       
-      const user = {name: req.body.name, pass: hash} 
-      const query = `insert into public."userInfo"(username, password)
-                     values ($1,$2)`
-
-      con.query(query, [user.name,user.pass], (err,result) => {
-         if(err){
-            console.log(`SQL Error: ${err}`)
-            res.status(500).send("Internal SQL error occurred while creating user profile")
-         }
+      con.query(query, [username,email], (err,result) =>{
+         if(err) { res.status(500).send(err) }
          else{
             console.log(result)
-            result.status(201).send("User profile created and saved")
+            res.status(200).send(`Added username ${username} into account belonging to ${email}`)
          }
       })
-   } catch{res.status(500).send("Internal Error: Error occurred while creating account")}
+      res.status(200).send("User successfully created")
+   } catch{
+      res.status(500).send("Internal Error: Error occurred while creating account")
+   }
 })
 
-router.get('/login', async(res,req) =>{
+/*
+   Login will require the password variable in the form:
+      {
+         "password": [Enter password here],
+      }
+*/
+router.post('/login', async(req,res) =>{
    try{
-      con.query('SELECT password FROM floodwatch_prototype.usertable WHERE username = $1;', [req.body.name], async(err,result)=> {
-         
-         // If the username doesn't exist in the database
-         if(result.rows.length === 0) {
-            console.log(err)
-            return res.status(404).send("User not found")
-         }
+      const {email, password} = req.body
+      const {data, error} = await supabase.auth.signInWithPassword({ email, password })
 
-         console.log("User found")
-         let json = JSON.stringify(result.rows[0]);
-         json = JSON.parse(json)
+      if(error){
+         console.log(`Supabase Error; ${error.message}`)
+         res.status(500).send(`Internal Error occured while signing in`)
+      }
 
-         const pass = json.password
-
-         console.log(pass)
-
-         if (await bcrypt.compare(req.body.password, pass)) 
-            res.status(200).send("Success! Log in approved")
-         else res.status(401).send("Incorrect password")
-      })
+      res.status(200).cookie("access_token", data.session.access_token, {httpOnly: true, secure: true})
    } catch{res.statusCode(500).send("Internal Error: Error occured during login")}
 })
 
+router.get("/logout", (req,res) => {
+   res.clearCookie("access_token")
+   res.status(200).send(``)
+})
 
 /*
    updateUser will require a newUser variable in the form:
@@ -81,7 +82,18 @@ router.get('/login', async(res,req) =>{
 */
 router.patch('/updateUser', async(req,res) =>{
    try{
+      const {email, newUser} = req.body
+      const query = `UPDATE public.profiles
+                     SET username = '$1'
+                     WHERE email = '$2'`
       
+      con.query(query, [newUser,email], (err,result) =>{
+         if(err) { res.status(500).send(err) }
+         else{
+            console.log(result)
+            res.status(200).send(`Added username ${username} into account belonging to ${email}`)
+         }
+      })
    }catch{res.status(500).send("Internal Error: Error occurred while updating account information")}
 })
 
@@ -93,25 +105,59 @@ router.patch('/updateUser', async(req,res) =>{
       }
 */
 router.patch('/updatePass', async(req,res) =>{
-
+   try{
+      const {email, newPassword} = req.body
+      const {data,error} = await supabase.auth.updateUser({
+         password: newPassword
+      })
+      return {data,error}
+   }catch{res.status(500).send("Internal error occurred while updating password")}
 })
 
 
 /*
    updatePreferences will have a preferences variable:
       {
-         "preferences": [Enter preferences here]
+         "preferences": [Enter preferences here],  
       }
-   This is separate from create since we will want them 
+      
+   *This attribute is an array of text, so you can send an array for this
+   **This is separate from create since we will want them 
    to have created an account first.
 */
 router.patch('/updatePreferences' , async(req,res) =>{
+   const {email, preferences} = req.body
 
+   const query = `UPDATE public.profiles
+                  SET prefernce = $1
+                  WHERE email = '$2'`
+   
+   con.query(query, [preferences, email], (err,result) =>{
+      if(err) { res.status(500).send(err) }
+      else{
+         console.log(result)
+         res.status(200).send(`Updated preferences`)
+      }
+   })
 })
 
 router.delete('/remove', async(req,res)=> {
    try{
+      const email = req.body.email
 
+      const query = `SELECT id
+                     FROM public.profiles
+                     WHERE email = '$1'`
+      con.query(query, [email], async(err,result) =>{
+         if(err) { res.status(500).send(err) }
+         else{
+            const userID = result.rows[0].id
+            const { data, error } = await supabase.auth.admin.deleteUser({ userID })
+            if(error){
+               console.log(`Supabase Error: ${error.message}`)
+            }
+         }
+      })
    }catch{res.status(500).send("Internal Error: Error occurred while deleting account")}
 })
 
