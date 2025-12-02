@@ -32,7 +32,7 @@ async function searchNearbyPlaces(lat, lon, rad){
          }
       },
       includedTypes: ['restaurant'],
-      maxResultCount: 30 //We'll try to max out the result to send 30 restaurants
+      maxResultCount: 30 // We'll try to max out the results to send 30 restaurants
    }
    
    const fieldMask = [

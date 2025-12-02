@@ -1,6 +1,5 @@
 //Router module for user actions
 
-const bcrypt = require('bcrypt')
 const con = require('../db/client.cjs')
 const express = require('express')
 const router = express.Router()
