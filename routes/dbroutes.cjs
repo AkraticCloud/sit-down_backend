@@ -4,7 +4,7 @@ const express = require('express')
 
 const router = express.Router()
 
-// Saves a favorited restaurant to the database for creating FoodLists
+// Creates a foodList in the database. 
 router.post('/createlist', async(req,res) =>{
    try{
       const{foodlist_name, restaurant_id, username} = req.body
