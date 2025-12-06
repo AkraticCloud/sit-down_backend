@@ -11,11 +11,8 @@ router.post('/createlist', async(req,res) =>{
 
       const query = `INSERT INTO public."foodLists"(foodlist_name, restaurant, createdby) 
                      VALUES ($1,$2,$3)`
-
-      const user_id = con.query `select id
-                                 from public.profiles
-                                 where username = '${username}'` 
-      con.query(query,[foodlist_name,restaurant_id,user_id], (err,result) =>{
+ 
+      con.query(query,[foodlist_name,restaurant_id,username], (err,result) =>{
          if(err){ res.status(500).send(err) }
          else{
             console.log(result)
@@ -33,12 +30,9 @@ router.put('/addtolist', async(req,res) =>{
 
       const query = `UPDATE public."foodLists" 
                      set restaurants = array_append(restaurants,'$1')
-                     where foodlist_name = $2 AND createdby = $3`
-      const user_id = con.query `select id
-                                 from public.profiles
-                                 where username = '${username}'` 
+                     where foodlist_name = $2 AND createdby = $3` 
 
-      con.query(query,[restaurant_id,foodlist_name,user_id], (err,result) => {
+      con.query(query,[restaurant_id,foodlist_name,username], (err,result) => {
          if(err){ res.status(500).send(err) }
          else{
             console.log(result)
@@ -51,16 +45,13 @@ router.put('/addtolist', async(req,res) =>{
 // Retrieves restaurants from a FoodList
 router.get('/foodlists', async(req,res) =>{
    try{
-      const{foodlist_name,username} = req.body
+      const{username} = req.body
 
       const query = `SELECT foodlist_name, restaurants
                      FROM public."foodLists"
-                     WHERE foodlist_name = $1 AND createdby = $2`
-      const user_id = con.query `select id
-                                 from public.profiles
-                                 where username = '${username}'` 
+                     WHERE createdby = $1`
 
-      con.query(query, [foodlist_name,user_id], (err,result) => {
+      con.query(query, [username], (err,result) => {
          if(err){ res.status(500).send(err) }
          else{
             console.log(result)
@@ -78,11 +69,8 @@ router.delete('/removefromlist', async(req,res) =>{
       const query = `update public."foodLists"
                      set restaurants = array_remove(restaurants, '$1')
                      where foodlist_name = $2 and createdby = $3`
-      const user_id = con.query `select id
-                                 from public.profiles
-                                 where username = '${username}'` 
 
-      con.query(query,[restaurant_id,foodlist_name,user_id], (err,result) => {
+      con.query(query,[restaurant_id,foodlist_name,username], (err,result) => {
          if(err) { res.status(500).send(err) }
          else{
             console.log(result)
@@ -99,11 +87,8 @@ router.delete('/deletelist', async(req,res) =>{
 
       const query = `delete from public."foodLists"
                      where foodlist_name = $1 and createdby = $3`
-      const user_id = con.query `select id
-                                 from public.profiles
-                                 where username = '${username}'` 
                                  
-      con.query(query,[foodlist_name,user_id], (err,result) => {
+      con.query(query,[foodlist_name,username], (err,result) => {
          if(err) { res.status(500).send(err) }
          else{
             console.log(result)
