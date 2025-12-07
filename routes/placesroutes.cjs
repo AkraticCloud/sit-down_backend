@@ -67,6 +67,43 @@ async function searchNearbyPlaces(lat, lon, rad){
    }
 }
 
+async function searchPlaceID(placeID) {
+
+   // The API requires resources name in the format: "places/PLACE_ID"
+   const placeName = `place/${placeID}`
+
+   const request= {
+      name: placeName,
+   }
+
+   //To save on costs, we'll only grab the fields available in the Basic SKU
+   const fieldMask = [
+      'places.displayName',
+      'places.formattedAddress',
+   ].join(',')
+   
+   try{
+      const [response] = await placesClient.getPlace( request, {
+         otherArgs: {
+            headers: {
+               'X-Goog-FieldMask' : fieldMask,
+            }
+         }
+      })
+
+      const placeDetails = response.place
+
+      console.log(`Restaurant: ${placeDetails.displayName?.text}`)
+      console.log(`Address: ${placeDetails.formattedAddress}`)
+
+      return placeDetails
+   } catch {
+      console.error(`Error fetching Place Details`)
+   }
+
+}
+
+
 /*
    For this function, we require the coordinates of the user and the radius of how far the user wants to search
    in this following format:
@@ -84,6 +121,21 @@ router.get("/nearby", async(req, res) =>{
       res.status(200).send(nearbyPlaces)
    }
    catch{ res.status(500).send("Internal Error occurred while calling to Google Maps API") }
+})
+
+
+/*
+   For this functionn, we require the place ids, which are stored in the database and should be retrieved by the frontend
+   when accessing foodlists
+*/
+
+router.get("/details", async(req,res) =>{
+   const id = req.body
+   try{
+      const details = await searchPlaceID(id)
+      res.status(200).send(details)
+   }
+   catch{ res.status(500).send("Internal error occurred while searching place details")}
 })
 
 module.exports = router
