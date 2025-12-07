@@ -93,10 +93,14 @@ async function searchPlaceID(placeID) {
 
       const placeDetails = response.place
 
-      console.log(`Restaurant: ${placeDetails.displayName?.text}`)
-      console.log(`Address: ${placeDetails.formattedAddress}`)
+      const result = {
+         'Name': placeDetails.displayName?.text,
+         'Address': placeDetails.formattedAddress
+      }
 
-      return placeDetails
+      console.log(result)
+
+      return result
    } catch {
       console.error(`Error fetching Place Details`)
    }
@@ -118,24 +122,47 @@ router.get("/nearby", async(req, res) =>{
    const {lat,long, radius} = req.body
    try{
       const nearbyPlaces = await searchNearbyPlaces(lat,long,radius)
-      res.status(200).send(nearbyPlaces)
+      const response = JSON.stringify({ results: nearbyPlaces})
+
+      console.log(response)
+
+      res.contentType('application/json')
+      return res.status(200).send(response)
    }
-   catch{ res.status(500).send("Internal Error occurred while calling to Google Maps API") }
+   catch{ return res.status(500).send("Internal Error occurred while calling to Google Maps API") }
 })
 
 
 /*
    For this functionn, we require the place ids, which are stored in the database and should be retrieved by the frontend
    when accessing foodlists
+
+   [
+      {
+         "placeID": [Enter ID here]
+      },
+      ...
+   ]
+
+   We want the client to send an array of JSON data corresponding to the number of restaurants in the foodlist
 */
 
 router.get("/details", async(req,res) =>{
-   const id = req.body
+   const detailIDs = req.body
+
+   if(!Array.isArray(detailIDs)) return res.status(400).send('Request body must be an array of JSON objects')
+   
+   const response = []
    try{
-      const details = await searchPlaceID(id)
-      res.status(200).send(details)
+      for( const restaurants in detailIDs ){
+         let details = await searchPlaceID(restaurants)
+         response.push(details)
+      }
+      
+      res.contentType('application/json')
+      return res.status(200).send(response)
    }
-   catch{ res.status(500).send("Internal error occurred while searching place details")}
+   catch{ return res.status(500).send("Internal error occurred while searching place details")}
 })
 
 module.exports = router
