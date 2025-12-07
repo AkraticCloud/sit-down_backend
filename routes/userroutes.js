@@ -37,12 +37,12 @@ router.post('/create', async(req, res) =>{
       })
       if(error){
          console.log(`Supabase Error: ${error.message}`)
-         res.status(500).send(`Internal Error occured while creating account: ${error.message}`)
+         return res.status(500).send(`Internal Error occured while creating account: ${error.message}`)
       }
 
-      res.status(200).send(`Added ${username} into account belonging to ${email}`)   
+      return res.status(200).send(`Added ${username} into account belonging to ${email}`)   
    } catch{
-      res.status(500).send("Internal Error: Error occurred while creating account")
+      return res.status(500).send("Internal Error: Error occurred while creating account")
    }
 })
 
@@ -92,7 +92,7 @@ router.post('/login', async (req, res) => {
 
 router.get("/logout", (req,res) => {
    res.clearCookie("access_token")
-   res.status(200).send(``)
+   return res.status(200).send(``)
 })
 
 /*
@@ -105,17 +105,17 @@ router.patch('/updateUser', async(req,res) =>{
    try{
       const {email, newUser} = req.body
       const query = `UPDATE public.profiles
-                     SET username = '$1'
-                     WHERE email = '$2'`
+                     SET username = $1
+                     WHERE email = $2`
       
       con.query(query, [newUser,email], (err,result) =>{
          if(err) { res.status(500).send(err) }
          else{
             console.log(result)
-            res.status(200).send(`Added username ${username} into account belonging to ${email}`)
+            return res.status(200).send(`Added username ${newUser} into account belonging to ${email}`)
          }
       })
-   }catch{res.status(500).send("Internal Error: Error occurred while updating account information")}
+   }catch{ return res.status(500).send("Internal Error: Error occurred while updating account information")}
 })
 
 
@@ -132,7 +132,7 @@ router.patch('/updatePass', async(req,res) =>{
          password: newPassword
       })
       return {data,error}
-   }catch{res.status(500).send("Internal error occurred while updating password")}
+   }catch{return res.status(500).send("Internal error occurred while updating password")}
 })
 
 
@@ -157,7 +157,7 @@ router.patch('/updatePreferences' , async(req,res) =>{
       if(err) { res.status(500).send(err) }
       else{
          console.log(result)
-         res.status(200).send(`Updated preferences`)
+         return res.status(200).send(`Updated preferences`)
       }
    })
 })
@@ -179,7 +179,7 @@ router.delete('/remove', async(req,res)=> {
             }
          }
       })
-   }catch{res.status(500).send("Internal Error: Error occurred while deleting account")}
+   }catch{return res.status(500).send("Internal Error: Error occurred while deleting account")}
 })
 
 module.exports = router
