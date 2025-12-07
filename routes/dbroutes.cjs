@@ -9,8 +9,8 @@ router.post('/createlist', async(req,res) =>{
    try{
       const{foodlist_name, restaurant_id, username} = req.body
 
-      const query = `INSERT INTO public."foodLists"(foodlist_name, restaurant, createdby) 
-                     VALUES ($1,$2,$3)`
+      const query = `INSERT INTO public."foodLists"(foodlist_name, restaurants, createdby) 
+                     VALUES ($1,($2),$3)`
 
       con.query(query,[foodlist_name,restaurant_id,username], (err,result) =>{
          if(err){ res.status(500).send(err) }
