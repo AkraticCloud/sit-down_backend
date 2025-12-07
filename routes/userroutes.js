@@ -52,19 +52,43 @@ router.post('/create', async(req, res) =>{
          "password": [Enter password here],
       }
 */
-router.post('/login', async(req,res) =>{
-   try{
-      const {email, password} = req.body
-      const {data, error} = await supabase.auth.signInWithPassword({ email, password })
+router.post('/login', async (req, res) => {
+   try {
+   const { email, password } = req.body;
 
-      if(error){
-         console.log(`Supabase Error; ${error.message}`)
-         res.status(500).send(`Internal Error occured while signing in`)
-      }
+   // Attempt Supabase login
+   const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+   });
 
-      res.status(200).cookie("access_token", data.session.access_token, {httpOnly: true, secure: true})
-   } catch{res.statusCode(500).send("Internal Error: Error occured during login")}
-})
+   // Invalid credentials
+   if (error) {
+      console.log(`Supabase Error: ${error.message}`);
+   return res.status(401).json({ error: 'Invalid credentials' });
+   }
+
+   // Null session check
+   if (!data.session) {
+   return res.status(400).json({ error: 'Login failed: no session returned' });
+   }
+
+   // Set secure HTTP-only cookie
+   res.cookie('access_token', data.session.access_token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none', //allow cross-site cookie sending
+      maxAge: data.session.expires_in * 1000 // expire in 1 hour
+   });
+
+   return res.status(200).json({ ok: true });
+
+   } catch (err) {
+      console.error('Login error:', err);
+      return res.status(500).json({ error: 'Internal server error' });
+   }
+});
+
 
 router.get("/logout", (req,res) => {
    res.clearCookie("access_token")
