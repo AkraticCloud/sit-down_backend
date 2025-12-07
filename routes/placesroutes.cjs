@@ -85,4 +85,5 @@ router.get("/nearby", async(req, res) =>{
    }
    catch{ res.status(500).send("Internal Error occurred while calling to Google Maps API") }
 })
+
 module.exports = router

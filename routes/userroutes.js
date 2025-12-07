@@ -1,6 +1,6 @@
 //Router module for user actions
 
-const bcrypt = require('bcrypt')
+
 const con = require('../db/client.cjs')
 const express = require('express')
 const router = express.Router()
@@ -26,24 +26,21 @@ router.post('/create', async(req, res) =>{
    try{
       const { email, password, username } = req.body
       console.log(`${email}\t${password}\t${username}`)
-      const { data, error } = await supabase.auth.signUp({ email, password })
+      const { data, error } = await supabase.auth.signUp({ 
+         email, 
+         password,
+         options: {
+            data:{
+               username: username
+            },
+         }, 
+      })
       if(error){
          console.log(`Supabase Error: ${error.message}`)
          res.status(500).send(`Internal Error occured while creating account: ${error.message}`)
       }
 
-      const query = `UPDATE public.profiles
-                     SET username = '$1'
-                     WHERE email = '$2'`
-      
-      con.query(query, [username,email], (err,result) =>{
-         if(err) { res.status(500).send(err) }
-         else{
-            console.log(result)
-            res.status(200).send(`Added username ${username} into account belonging to ${email}`)
-         }
-      })
-      res.status(200).send("User successfully created")
+      res.status(200).send(`Added ${username} into account belonging to ${email}`)   
    } catch{
       res.status(500).send("Internal Error: Error occurred while creating account")
    }
