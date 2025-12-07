@@ -26,23 +26,22 @@ router.post('/create', async(req, res) =>{
    try{
       const { email, password, username } = req.body
       console.log(`${email}\t${password}\t${username}`)
-      const { data, error } = await supabase.auth.signUp({ 
+      const { error } = await supabase.auth.signUp({ 
          email, 
          password,
          options: {
-            data:{
-               username: username
-            },
-         }, 
+            data:{ username }
+         },
       })
       if(error){
          console.log(`Supabase Error: ${error.message}`)
-         res.status(500).send(`Internal Error occured while creating account: ${error.message}`)
+         return res.status(500).json({ error: error.message })
       }
 
-      res.status(200).send(`Added ${username} into account belonging to ${email}`)   
-   } catch{
-      res.status(500).send("Internal Error: Error occurred while creating account")
+      return res.status(200).json({ message: `Created account for ${email}` })
+   } catch(err){
+      console.error('Create error:', err.message)
+      return res.status(500).json({ error: 'Internal server error' })
    }
 })
 
@@ -92,7 +91,7 @@ router.post('/login', async (req, res) => {
 
 router.get("/logout", (req,res) => {
    res.clearCookie("access_token")
-   res.status(200).send(``)
+   return res.status(200).send(``)
 })
 
 /*
@@ -105,17 +104,21 @@ router.patch('/updateUser', async(req,res) =>{
    try{
       const {email, newUser} = req.body
       const query = `UPDATE public.profiles
-                     SET username = '$1'
-                     WHERE email = '$2'`
+                     SET username = $1
+                     WHERE email = $2`
       
       con.query(query, [newUser,email], (err,result) =>{
-         if(err) { res.status(500).send(err) }
-         else{
-            console.log(result)
-            res.status(200).send(`Added username ${username} into account belonging to ${email}`)
+         if(err){
+            console.error('Query error:',err.message)
+            return res.status(500).json({ error: err.message })
          }
+         console.log(result)
+         return res.status(200).json({ message: `Updated username to ${newUser}` })
       })
-   }catch{res.status(500).send("Internal Error: Error occurred while updating account information")}
+   } catch(err){ 
+      console.error('Update error:', err.message)
+      return res.status(500).json({ error: 'Internal server error' })
+   }
 })
 
 
@@ -127,12 +130,18 @@ router.patch('/updateUser', async(req,res) =>{
 */
 router.patch('/updatePass', async(req,res) =>{
    try{
-      const {email, newPassword} = req.body
-      const {data,error} = await supabase.auth.updateUser({
+      const {newPassword} = req.body
+      const {error} = await supabase.auth.updateUser({ //assumes user is authenticated
          password: newPassword
       })
-      return {data,error}
-   }catch{res.status(500).send("Internal error occurred while updating password")}
+      if(error){
+         return res.status(500).json({error: error.message})
+      }
+      return res.status(200).json({ message: 'Password updated'})
+   }catch(err){
+      console.error('Password error:', err)
+      return res.status(500).json({ error: 'Internal server error' })
+   }
 })
 
 
@@ -147,19 +156,24 @@ router.patch('/updatePass', async(req,res) =>{
    to have created an account first.
 */
 router.patch('/updatePreferences' , async(req,res) =>{
-   const {email, preferences} = req.body
-
-   const query = `UPDATE public.profiles
-                  SET prefernce = $1
-                  WHERE email = '$2'`
-   
-   con.query(query, [preferences, email], (err,result) =>{
-      if(err) { res.status(500).send(err) }
-      else{
+   try{
+      const {email, preferences} = req.body
+      const query = `UPDATE public.profiles
+                     SET preference = $1
+                     WHERE email = $2`
+      
+      con.query(query, [preferences, email], (err,result) =>{
+         if(err){
+            console.error('Query error:', err.message)
+            return res.status(500).json({error: err.message})
+         }
          console.log(result)
-         res.status(200).send(`Updated preferences`)
-      }
-   })
+         return res.status(200).json({message: 'Preferences updated'})
+      })
+   }catch(err){
+      console.error('Preferences error:', err.message)
+      return res.status(500).json({ error: 'Internal server error' })
+   }
 })
 
 router.delete('/remove', async(req,res)=> {
@@ -168,18 +182,27 @@ router.delete('/remove', async(req,res)=> {
 
       const query = `SELECT id
                      FROM public.profiles
-                     WHERE email = '$1'`
+                     WHERE email = $1`
       con.query(query, [email], async(err,result) =>{
-         if(err) { res.status(500).send(err) }
-         else{
-            const userID = result.rows[0].id
-            const { data, error } = await supabase.auth.admin.deleteUser({ userID })
-            if(error){
-               console.log(`Supabase Error: ${error.message}`)
-            }
+         if(err) { 
+            console.error('Query error:', err.message)
+            return res.status(500).json({ error: err.message }) 
          }
+         if(!result.rows[0]) {
+            return res.status(404).json({ error: 'User not found' })
+         }
+         const userID = result.rows[0].id
+         const { error } = await supabase.auth.admin.deleteUser(userID)
+         if(error){
+            console.error('Delete error:', error.message)
+            return res.status(500).json({ error: error.message })
+         }
+         return res.status(200).json( {message: 'Account deleted'})
       })
-   }catch{res.status(500).send("Internal Error: Error occurred while deleting account")}
+   }catch(err){
+      console.error('Remove error:', err.message)
+      return res.status(500).json({error: 'Internal server error'})
+   }
 })
 
 module.exports = router
