@@ -1,5 +1,5 @@
 // Router modules for Database actions that don't explicitly involve user info values
-const con = require('../db/client.cjs')
+const supabase = require('../db/client.cjs')
 const express = require('express')
 
 const router = express.Router()
@@ -9,20 +9,18 @@ router.post('/createlist', async(req,res) =>{
    try{
       const{foodlist_name, restaurant_id, username} = req.body
 
-      const query = `INSERT INTO public."foodLists"(foodlist_name, restaurant, createdby) 
-                     VALUES ($1,$2,$3)`
+      const { error } = await supabase
+         .from("foodLists")
+         .insert({
+            foodlist_name: foodlist_name,
+            restaurants: [restaurant_id],
+            createdby: username
+         })
 
-      const user_id = con.query `select id
-                                 from public.profiles
-                                 where username = '${username}'` 
-      con.query(query,[foodlist_name,restaurant_id,user_id], (err,result) =>{
-         if(err){ res.status(500).send(err) }
-         else{
-            console.log(result)
-            res.status(200).send("Data received, creating FoodList in database")
-         }
-      })
-   } catch{res.status(500).send("Internal Error: Error occurred while creating FoodList")}
+      if( error ) return res.status(500).json({Error: error.messsage })
+      
+      return res.status(200).send({Message:" FoodList created"})
+   } catch{res.status(500).send({Message: "Internal Error: Error occurred while creating FoodList"})}
 })
 
 
@@ -31,43 +29,64 @@ router.put('/addtolist', async(req,res) =>{
    try{
       const{foodlist_name, restaurant_id,username} = req.body
 
-      const query = `UPDATE public."foodLists" 
-                     set restaurants = array_append(restaurants,'$1')
-                     where foodlist_name = $2 AND createdby = $3`
-      const user_id = con.query `select id
-                                 from public.profiles
-                                 where username = '${username}'` 
+      const {data, error} = await supabase
+      .from("foodLists")
+      .select('restuarants')
+      .eq('foodlist_name', foodlist_name )
+      .eq('createdby', username )
 
-      con.query(query,[restaurant_id,foodlist_name,user_id], (err,result) => {
-         if(err){ res.status(500).send(err) }
-         else{
-            console.log(result)
-            res.status(200).send("Data received, updating FoodList")
-         }
-      })
+      if(error){
+         Console.log(`Error fetching data: ${error}`)
+      }
+
+      const restaurantIds = data.restaurants
+      restaurantIds.push(restaurant_id)
+
+      const { error: updateError } = await supabase
+         .from("foodLists")
+         .update({
+            restaurants: restaurantIds
+         })
+         .eq('foodlist_name', foodlist_name )
+         .eq('createdby', username )
+
+         if (updateError) return res.status(500).json({Error: updateError.message})
+         
+      return res.status(200).send(`Update successful`)
    }catch{res.status(500).send("Internal Error: Error occurred while adding restaurant to a FoodList")}
 })
 
-// Retrieves restaurants from a FoodList
+// Retrieves the foodlists made by a given user. 
 router.get('/foodlists', async(req,res) =>{
    try{
-      const{foodlist_name,username} = req.body
+      const{username} = req.body
 
-      const query = `SELECT foodlist_name, restaurants
-                     FROM public."foodLists"
-                     WHERE foodlist_name = $1 AND createdby = $2`
-      const user_id = con.query `select id
-                                 from public.profiles
-                                 where username = '${username}'` 
+      const { data, error } = await supabase
+         .from("foodLists")
+         .select('foodlist_name, restaurants')
+         .eq('createdby', username)
+      if (error) return res.status(500).json({Error: error.message})
 
-      con.query(query, [foodlist_name,user_id], (err,result) => {
-         if(err){ res.status(500).send(err) }
-         else{
-            console.log(result)
-            res.status(200).send("Request received, sending list to client")
-         }
-      })
+      const foodLists = foodLists
+      return res.status(200).send(foodLists)
    }catch{res.status(500).send("Internal Error: Error occurred while retrieving FoodList restuarants")}
+})
+
+router.get('/foodlistscontent', async(req, res) => {
+   try{
+      const{foodlist_name, username} = req.body
+
+      const { data, error } = await supabase
+         .from("foodLists")
+         .select("restaurants")
+         .eq("foodlist_name", foodlist_name)
+         .eq("createdby", username)
+         .single()
+      
+      if ( error ) return res.status(500).json({ Error: error.message })
+
+      return res.status(200).json(data)
+   }catch{res.status(500).send("Internal Error: Error occurred while retrieving restaurants from a foodList")}
 })
 
 // Remove a restaurant from specified FoodList
@@ -75,20 +94,34 @@ router.delete('/removefromlist', async(req,res) =>{
    try{
       const{foodlist_name,restaurant_id,username} = req.body
 
-      const query = `update public."foodLists"
-                     set restaurants = array_remove(restaurants, '$1')
-                     where foodlist_name = $2 and createdby = $3`
-      const user_id = con.query `select id
-                                 from public.profiles
-                                 where username = '${username}'` 
+      const {data, error} = await supabase
+      .from("foodLists")
+      .select('restuarants')
+      .eq('foodlist_name', foodlist_name )
+      .eq('createdby', username )
 
-      con.query(query,[restaurant_id,foodlist_name,user_id], (err,result) => {
-         if(err) { res.status(500).send(err) }
-         else{
-            console.log(result)
-            res.status(200).send(`Requset received, deleting from ${foodlist_name}`)
-         }
-      })
+      if(error){
+         Console.log(`Error fetching data: ${error}`)
+      }
+
+      const restaurantIds = data.restaurants
+
+      const removeInd = restaurantIds.indexOf(restaurant_id)
+      if (removeInd > -1){
+         restaurantIds.splice(removeInd, 1)
+      }
+
+      const { error: updateError } = await supabase
+         .from("foodLists")
+         .update({
+            restaurants: restaurantIds
+         })
+         .eq('foodlist_name', foodlist_name )
+         .eq('createdby', username )
+
+         if (updateError) return res.status(500).json({Error: updateError.message})
+         
+      return res.status(200).send(`Update successful`)
    }catch{res.status(500).send("Internal Error: Error occurred while retrieving FoodList restuarants")}
 })
 
@@ -97,19 +130,14 @@ router.delete('/deletelist', async(req,res) =>{
    try{
       const{foodlist_name,username} = req.body
 
-      const query = `delete from public."foodLists"
-                     where foodlist_name = $1 and createdby = $3`
-      const user_id = con.query `select id
-                                 from public.profiles
-                                 where username = '${username}'` 
-                                 
-      con.query(query,[foodlist_name,user_id], (err,result) => {
-         if(err) { res.status(500).send(err) }
-         else{
-            console.log(result)
-            res.status(200).send("Request received, deleting")
-         }
-      })
+      const { error } = await supabase
+         .from("foodLists")
+         .delete()
+         .eq("foodlist_name", foodlist_name)
+         .eq("createdby", username)
+      if ( error ) return res.status(500).json({ Error: error.message})
+      
+      return res.status(200).send(`${foodlist_name} deleted`)
    }catch{res.status(500).send("Internal Error: Error occurred while retrieving FoodList restuarants")}
 })
 
