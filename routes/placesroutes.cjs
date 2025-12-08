@@ -1,5 +1,6 @@
 // Router Module for handling 
 const express = require('express')
+const { rmSync } = require('fs')
 const {PlacesClient} = require('@googlemaps/places').v1
 const router = express.Router()
 
@@ -25,7 +26,7 @@ async function searchNearbyPlaces(lat, lon, rad){
    }
    
    const request = {
-      loactionRestriction: {
+      locationRestriction: { //fixed typo
          circle: {
             center: center,
             radius: rad
@@ -114,15 +115,27 @@ async function searchPlaceID(placeID) {
       }
 */
 
-router.get("/nearby", async(req, res) =>{
+router.post("/nearby", async(req, res) =>{
    const {lat,long, radius} = req.body
+
+   if (
+      typeof lat !== "number" ||
+      typeof long !== "number" ||
+      typeof radius !== "number"||
+      radius <= 0 ||
+      radius > 50000
+   ){
+      return res.status(400).json({error: 'Invalid coordinates or radius'})
+   }
    try{
       const nearbyPlaces = await searchNearbyPlaces(lat,long,radius)
-      res.status(200).send(nearbyPlaces)
+      return res.status(200).json(nearbyPlaces)
    }
-   catch{ res.status(500).send("Internal Error occurred while calling to Google Maps API") }
+   catch(error){ 
+      console.error('Error fetching nearby place details:', error)
+      return res.status(500).json({ error: "Internal Error occurred while searching nearby place details" })
+   }
 })
-
 
 /*
    For this functionn, we require the place ids, which are stored in the database and should be retrieved by the frontend
