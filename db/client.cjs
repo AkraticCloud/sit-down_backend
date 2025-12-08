@@ -13,6 +13,6 @@
     process.exit(1)
  }
 
- const supabase = createClient({ url, key })
+ const supabase = createClient(url,key)
  
  module.exports = supabase
