@@ -1,6 +1,8 @@
 import Groq from "groq-sdk";
 
+const express = require('express')
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const router = express.Router()
 
 function getGroqChatCompletion() {
   return groq.chat.completions.create({
