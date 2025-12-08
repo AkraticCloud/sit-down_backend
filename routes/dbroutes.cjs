@@ -1,6 +1,5 @@
 // Router modules for Database actions that don't explicitly involve user info values
-const { default: supabase } = require('../db/client.cjs')
-const con = require('../db/client.cjs')
+const supabase = require('../db/client.cjs')
 const express = require('express')
 
 const router = express.Router()

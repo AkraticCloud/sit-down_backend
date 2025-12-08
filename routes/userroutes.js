@@ -1,10 +1,9 @@
 //Router module for user actions
 
 
-const con = require('../db/client.cjs')
+const supabase = require('../db/client.cjs')
 const express = require('express')
 const router = express.Router()
-const { supabase } = require('../utility/supabase.js')
 
 /*
    We expect that the client requests should send a JSON that at least contains:
