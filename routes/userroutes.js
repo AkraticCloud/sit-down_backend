@@ -110,7 +110,7 @@ router.patch('/updateUser', async(req,res) =>{
 
       if( error ) return res.status(500).json({ Error: error.message })
 
-      return res.status(200).send(`User name updated to ${newUser}`)
+      return res.status(200).json({newUsername: newUser})
    } catch(err){ 
       console.error('Update error:', err.message)
       return res.status(500).json({ error: 'Internal server error' })

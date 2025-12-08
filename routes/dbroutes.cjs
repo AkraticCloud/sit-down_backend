@@ -72,6 +72,7 @@ router.get('/foodlists', async(req,res) =>{
    }catch{res.status(500).send("Internal Error: Error occurred while retrieving FoodList restuarants")}
 })
 
+//Retrieves the content of a specific foodlist
 router.get('/foodlistscontent', async(req, res) => {
    try{
       const{foodlist_name, username} = req.body
