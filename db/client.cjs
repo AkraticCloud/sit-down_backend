@@ -1,18 +1,18 @@
 // Establishes a connection to a PostgreSQL database
 // We'll need this connection for storing user information in a structured format
- const {Client} = require('pg')
+ const { createClient } = require('@supabase/supabase-js')
 
  require('dotenv').config()
 
  // Pulls from environment variables for required information
- const url = process.env.DB_URL
+ const url = process.env.SUPABASE_URL
+ const key = process.env.SUPABASE_PUBLISHABLE_KEY
+
  if (url == null) {
     console.error("Missing connection string, exiting...")
     process.exit(1)
  }
 
- const con = new Client({
-  connectionString: url
- })
+ const supabase = createClient({ url, key })
  
- module.exports = con
+ module.exports = supabase
