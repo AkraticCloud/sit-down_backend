@@ -20,57 +20,58 @@ async function getGroqChatCompletion(userPrompt) {
 
 router.post('/recommend', async(req, res) => {
     try {
-        const { history, preferences } = req.body;
+        const { history, nearbyRestaurants } = req.body;
 
-        // Check if history is empty
         if (!history || history.length === 0) {
             return res.status(400).json({ 
                 error: "No dining history available. Please swipe on some restaurants first!" 
             });
         }
 
-        // Build the prompt with user data
+        if (!nearbyRestaurants || nearbyRestaurants.length === 0) {
+            return res.status(400).json({ 
+                error: "No nearby restaurants available." 
+            });
+        }
+
         const prompt = `
-          You are a restaurant curator assistant. Based on the user's dining history and preferences, recommend ONE restaurant.
+          You are a restaurant curator assistant. Based on the user's dining history, recommend ONE restaurant from the available nearby options.
 
           User's Dining History:
           ${JSON.stringify(history, null, 2)}
 
-          User's Preferences:
-          ${JSON.stringify(preferences, null, 2)}
+          Available Nearby Restaurants:
+          ${nearbyRestaurants.map((r, i) => `${i}: ${r.name} - ${r.info} at ${r.address}`).join('\n')}
 
-          Analyze their liked, favorited, and passed restaurants along with their preferences (cuisines, dietary restrictions, dining style, price range).
+          Analyze their liked, favorited, and passed restaurants. Then pick the BEST match from the available nearby restaurants.
 
-          Respond with ONLY this exact format (no extra text, no markdown):
-
-          [Restaurant Name]
-          [Full Address]
-
-          Why this choice?
-          [Your reasoning here - mention what they like and how this restaurant matches their preferences]
-
-          Example:
-          Five Guys
-          936 York Rd Towson, MD 21204
-
-          Why this choice?
-          You like American cuisine and prefer places with dine-in and takeout options. This place matches most of your likes and fits your $$ price range.
-          `;
+          Respond with ONLY valid JSON (no markdown, no extra text):
+          {
+            "index": 3,
+            "reasoning": "You've liked Mexican and Mediterranean places. This restaurant offers similar cuisine and matches your $$ price preference."
+          }
+        `;
 
         const chatCompletion = await getGroqChatCompletion(prompt);
+        const aiResponse = JSON.parse(chatCompletion);
 
-        // Parse the response into structured format
-        const lines = chatCompletion.trim().split('\n').filter(line => line.trim());
-        
-        const name = lines[0] || "Unknown Restaurant";
-        const address = lines[1] || "Address not available";
-        const reasoningIndex = lines.findIndex(line => line.includes("Why this choice?"));
-        const reasoning = lines.slice(reasoningIndex + 1).join(' ').trim() || "No reasoning provided";
+        const recommendedIndex = aiResponse.index;
+        const restaurant = nearbyRestaurants[recommendedIndex];
+
+        if (typeof recommendedIndex !== 'number' || 
+            recommendedIndex < 0 || 
+            recommendedIndex >= nearbyRestaurants.length) {
+            return res.status(500).json({ error: "AI returned invalid restaurant index" });
+        }
+
+        if (!aiResponse.reasoning || aiResponse.reasoning.trim().length < 10) {
+            aiResponse.reasoning = "This restaurant matches your dining preferences.";
+        }
 
         res.json({
-            name,
-            address,
-            reasoning
+            name: restaurant.name,
+            address: restaurant.address,
+            reasoning: aiResponse.reasoning
         });
 
     } catch (error) {
