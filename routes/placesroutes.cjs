@@ -33,7 +33,7 @@ async function searchNearbyPlaces(lat, lon, rad){
          }
       },
       includedTypes: ['restaurant'],
-      maxResultCount: 20 //We'll try to max out the result to send 20 restaurants
+      maxResultCount: 10 //We'll try to max out the result to send 30 restaurants
    }
    
    const fieldMask = [
@@ -54,19 +54,19 @@ async function searchNearbyPlaces(lat, lon, rad){
          }
       })
       
-      const results = response.places.map(place =>({
+      const results = (response.places ?? []).map(place =>({
          placeid: place.id,
          name: place.displayName?.text || "Unknown",
          address: place.formattedAddress,
          primaryType: place.primaryType
       }))
 
-      console.log(results)
+      console.log('Nearby results:', results)
       return results
    }
    catch(error){
       console.error(`API Error: ${error}`)
-      return []
+      throw error
 
    }
 }
