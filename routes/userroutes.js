@@ -1,10 +1,9 @@
 //Router module for user actions
 
 
-const con = require('../db/client.cjs')
+const supabase = require('../db/client.cjs')
 const express = require('express')
 const router = express.Router()
-const { supabase } = require('../utility/supabase.js')
 
 /*
    We expect that the client requests should send a JSON that at least contains:
@@ -64,7 +63,7 @@ router.post('/login', async (req, res) => {
    // Invalid credentials
    if (error) {
       console.log(`Supabase Error: ${error.message}`);
-   return res.status(401).json({ error: 'Invalid credentials' });
+      return res.status(401).json({ error: 'Invalid credentials' });
    }
 
    // Null session check
@@ -73,7 +72,7 @@ router.post('/login', async (req, res) => {
    }
 
    // Set secure HTTP-only cookie
-   res.cookie('access_token', data.session.access_token, {
+   res.cookie('sb-access-token', data.session.access_token, {
       httpOnly: true,
       secure: true,
       sameSite: 'none', //allow cross-site cookie sending
@@ -103,18 +102,15 @@ router.get("/logout", (req,res) => {
 router.patch('/updateUser', async(req,res) =>{
    try{
       const {email, newUser} = req.body
-      const query = `UPDATE public.profiles
-                     SET username = $1
-                     WHERE email = $2`
       
-      con.query(query, [newUser,email], (err,result) =>{
-         if(err){
-            console.error('Query error:',err.message)
-            return res.status(500).json({ error: err.message })
-         }
-         console.log(result)
-         return res.status(200).json({ message: `Updated username to ${newUser}` })
-      })
+      const { error } = await supabase
+         .from("profiles")
+         .update({ username: newUser })
+         .eq('email', email)
+
+      if( error ) return res.status(500).json({ Error: error.message })
+
+      return res.status(200).send(`User name updated to ${newUser}`)
    } catch(err){ 
       console.error('Update error:', err.message)
       return res.status(500).json({ error: 'Internal server error' })
@@ -158,18 +154,15 @@ router.patch('/updatePass', async(req,res) =>{
 router.patch('/updatePreferences' , async(req,res) =>{
    try{
       const {email, preferences} = req.body
-      const query = `UPDATE public.profiles
-                     SET preference = $1
-                     WHERE email = $2`
       
-      con.query(query, [preferences, email], (err,result) =>{
-         if(err){
-            console.error('Query error:', err.message)
-            return res.status(500).json({error: err.message})
-         }
-         console.log(result)
-         return res.status(200).json({message: 'Preferences updated'})
-      })
+      const { error } = await supabase
+         .from("profiles")
+         .update({ preferences: preferences})
+         .eq("email", email)
+
+      if( error ) return res.status(500).json({ Error: error.message })
+
+      return res.status(200).send(`Prefernces updated`)
    }catch(err){
       console.error('Preferences error:', err.message)
       return res.status(500).json({ error: 'Internal server error' })
@@ -180,25 +173,21 @@ router.delete('/remove', async(req,res)=> {
    try{
       const email = req.body.email
 
-      const query = `SELECT id
-                     FROM public.profiles
-                     WHERE email = $1`
-      con.query(query, [email], async(err,result) =>{
-         if(err) { 
-            console.error('Query error:', err.message)
-            return res.status(500).json({ error: err.message }) 
-         }
-         if(!result.rows[0]) {
-            return res.status(404).json({ error: 'User not found' })
-         }
-         const userID = result.rows[0].id
-         const { error } = await supabase.auth.admin.deleteUser(userID)
-         if(error){
-            console.error('Delete error:', error.message)
-            return res.status(500).json({ error: error.message })
-         }
-         return res.status(200).json( {message: 'Account deleted'})
-      })
+      const { data, error: fetchError} = await supabase
+         .from("profiles")
+         .select("id")
+         .eq("email", email)
+         .single()
+      if ( fetchError ) return res.status(500).json({ Error: fetchError.message })
+      if ( !data ) return res.status(404).json({ Error: `User not found`})
+
+      const { error } = await supabase.auth.admin.deleteUser(userID)
+      if(error){
+         console.error('Delete error:', error.message)
+         return res.status(500).json({ error: error.message })
+      }
+
+      res.status(200).json({Message: `Account deleted`})
    }catch(err){
       console.error('Remove error:', err.message)
       return res.status(500).json({error: 'Internal server error'})
