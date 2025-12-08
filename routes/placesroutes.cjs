@@ -7,7 +7,7 @@ const router = express.Router()
 require('dotenv').config()
 
 const placesClient = new PlacesClient({
-   apiKey: process.env.PLACE_API_KEY
+   apiKey: process.env.PLACES_API_KEY
 })
 
 /*
