@@ -74,7 +74,7 @@ async function searchNearbyPlaces(lat, lon, rad){
 async function searchPlaceID(placeID) {
 
    // The API requires resources name in the format: "places/PLACE_ID"
-   const placeName = `place/${placeID}`
+   const placeName = `places/${placeID}`
 
    const request= {
       name: placeName,
@@ -165,8 +165,8 @@ router.get("/details", async(req,res) =>{
    
    const response = []
    try{
-      for( const restaurants in detailIDs ){
-         let details = await searchPlaceID(restaurants)
+      for( const item in detailIDs ){
+         let details = await searchPlaceID(item.placeID)
          response.push(details)
       }
       
