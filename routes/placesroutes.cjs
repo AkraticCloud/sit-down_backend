@@ -43,6 +43,8 @@ async function searchNearbyPlaces(lat, lon, rad){
       'places.primaryType'
    ].join(',')
 
+   let results = []
+
    try{
       const [response] = await placesClient.searchNearby(request, {
          otherArgs: {
@@ -64,6 +66,7 @@ async function searchNearbyPlaces(lat, lon, rad){
    }
    catch(error){
       console.error(`API Error: ${error}`)
+      return []
 
    }
 }
