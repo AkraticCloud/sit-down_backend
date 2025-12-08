@@ -3,7 +3,6 @@
     "@googlemaps/places": "^2.2.0",
     "@supabase/supabase-js": "^2.84.0",
     "axios": "^1.12.2",
-    "bcrypt": "^6.0.0",
     "body-parser": "^2.2.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
@@ -11,7 +10,6 @@
     "express": "^5.1.0",
     "node": "^20.19.6",
     "nodemon": "^3.1.10",
-    "pg": "^8.16.3",
     "postgres": "^3.4.7"
   }
 }
