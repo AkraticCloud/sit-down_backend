@@ -12,7 +12,7 @@ async function getGroqChatCompletion(userPrompt) {
         content: userPrompt,
       },
     ],
-    model: "llama3-8b-8192",
+    model: "llama-3.1-8b-instant",
   });
   
   return completion.choices[0]?.message?.content || "";
@@ -34,14 +34,20 @@ router.post('/recommend', async(req, res) => {
             });
         }
 
+        
+        const liked = history.filter(h => h.liked).map(h => h.restaurantName);
+        const disliked = history.filter(h => h.disliked).map(h => h.restaurantName);
+
         const prompt = `
+          The user likes: ${liked.join(", ")}
+          The user dislikes: ${disliked.join(", ")}
           You are a restaurant curator assistant. Based on the user's dining history, recommend ONE restaurant from the available nearby options.
 
           User's Dining History:
           ${JSON.stringify(history, null, 2)}
 
           Available Nearby Restaurants:
-          ${nearbyRestaurants.map((r, i) => `${i}: ${r.name} - ${r.info} at ${r.address}`).join('\n')}
+          ${nearbyRestaurants.map((r, i) => `${i}: ${r.name} at ${r.address}`).join('\n')}
 
           Analyze their liked, favorited, and passed restaurants. Then pick the BEST match from the available nearby restaurants.
 
