@@ -2,7 +2,9 @@ const express = require('express');
 const Groq = require("groq-sdk").default;
 const router = express.Router();
 
+const express = require('express')
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const router = express.Router()
 
 async function getGroqChatCompletion(userPrompt) {
   const completion = await groq.chat.completions.create({
